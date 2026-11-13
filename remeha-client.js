@@ -5,25 +5,6 @@ const { wrapper } = require("axios-cookiejar-support");
 const crypto = require("crypto");
 const fs = require("fs");
 
-// const BASE_LOGIN =
-//    "https://remehalogin.bdrthermea.net/bdrb2cprod.onmicrosoft.com";
-
-// const BASE_API =
-//    "https://api.bdrthermea.net/Mobile/api";
-
-// const CLIENT_ID =
-//    "6ce007c6-0628-419e-88f4-bee2e6418eec";
-
-// const POLICY = "B2C_1A_RPSignUpSignInNewRoomV3.1";
-
-// const REDIRECT_URI = "com.b2c.remehaapp://login-callback";
-
-// const SCOPE =
-//    "openid https://bdrb2cprod.onmicrosoft.com/iotdevice/user_impersonation offline_access";
-
-// const SUBSCRIPTION_KEY =
-//     "df605c5470d846fc91e848b1cc653ddf";
-
 class RemehaClient {
     constructor(options = {}) {
         this.email           = options.email;
