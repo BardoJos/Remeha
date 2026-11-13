@@ -112,3 +112,4 @@ The API is an undocumented third-party API.
 Authentication and endpoints may change.
 
 This project is not affiliated with Remeha or BDR Thermea.
+Basic code is found in a python project
