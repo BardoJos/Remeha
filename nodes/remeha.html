@@ -16,31 +16,6 @@ RED.nodes.registerType('remeha-home', {
             value: "6ce007c6-0628-419e-88f4-bee2e6418eec",
             required: true
         },
-        baseLogin: {
-            value: "https://remehalogin.bdrthermea.net",
-            required: true
-        },
-        baseTenant: {
-            value: "bdrb2cprod.onmicrosoft.com",
-            required: true
-        },
-
-        baseApi: {
-            value: "https://api.bdrthermea.net/Mobile/api",
-            required: true
-        },
-        policy: {
-            value: "B2C_1A_RPSignUpSignInNewRoomV3.1",
-            required: true
-        },
-        redirectUri: {
-            value: "com.b2c.remehaapp://login-callback",
-            required: true
-        },
-        scope: {
-            value: "https://bdrb2cprod.onmicrosoft.com/iotdevice/user_impersonation offline_access",
-            required: true
-        },
         subscriptionKey: {
             value: "df605c5470d846fc91e848b1cc653ddf",
             required: true
@@ -117,7 +92,7 @@ RED.nodes.registerType('remeha-home', {
     </p>
 	
 	<hr>
-    <h3>Configuratie</h3>
+    <h3>Configuration</h3>
 	
 	<div class="form-row">
         <label for="node-input-clientId">
@@ -125,7 +100,7 @@ RED.nodes.registerType('remeha-home', {
         </label>
         <input
             type="text" id="node-input-clientId"
-            placeholder="Voer Remeha Client ID in"
+            placeholder="Enter Remeha Client ID"
         >
     </div>
 	
@@ -134,51 +109,6 @@ RED.nodes.registerType('remeha-home', {
             <i class="fa fa-key"></i> Subscription Key
         </label>
         <input type="text" id="node-input-subscriptionKey">
-    </div>
-	
-    <div class="form-row">
-        <label for="node-input-baseLogin">
-            <i class="fa fa-sign-in"></i> Base Login
-        </label>
-        <input type="text" id="node-input-baseLogin">
-    </div>
-    <div class="form-row">
-        <label for="node-input-baseTenant">
-            <i class="fa fa-sign-in"></i> Base Tenant
-        </label>
-        <input type="text" id="node-input-baseTenant">
-    </div>
-
-    <div class="form-row">
-        <label for="node-input-policy">
-            <i class="fa fa-shield"></i> Policy
-        </label>
-        <input type="text" id="node-input-policy">
-    </div>
-	
-    <div class="form-row">
-        <label for="node-input-redirectUri">
-            <i class="fa fa-external-link"></i> Redirect URI
-        </label>
-        <input type="text" id="node-input-redirectUri">
-    </div>
-	
-	<div class="form-row">
-        <label for="node-input-scope">
-            <i class="fa fa-list"></i> Scope
-        </label>
-        <textarea
-            id="node-input-scope"
-            rows="3"
-            style="width:70%; resize:vertical;"
-        ></textarea>		
-    </div>
-
-    <div class="form-row">
-        <label for="node-input-baseApi">
-            <i class="fa fa-globe"></i> Base API
-        </label>
-        <input type="text" id="node-input-baseApi">
     </div>
 
 </script>
@@ -197,9 +127,9 @@ RED.nodes.registerType('remeha-home', {
 		<li>Task results and errors</li>
     </ol>
 
-    <h3>Invoer</h3>
+    <h3>Input</h3>
 
-    <p>Use msg.payload-object.</p>
+    <p>Use msg.payload-json.</p>
 
     <pre>
 {

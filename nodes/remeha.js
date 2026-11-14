@@ -11,7 +11,7 @@ module.exports = function(RED) {
 
         const node = this;
         const credentials = RED.nodes.getCredentials(config.id) || {};
-		
+
         const pollInterval = Math.max(
             30000,
             Number(config.pollInterval || 60) * 1000
@@ -117,7 +117,7 @@ module.exports = function(RED) {
                 const data = await api.getDashboard();
 
                 if (!data || !Array.isArray(data.appliances)) {
-                    throw new Error("No valid dashboard received");
+                    throw new Error("Ongeldig dashboard ontvangen");
                 }
 
                 dashboard = data;
@@ -133,7 +133,7 @@ module.exports = function(RED) {
                                 await api.getTechnicalInformation(id);
                         } catch (error) {
                             node.warn(
-                                "Technical information: " + error.message
+                                "Technische informatie: " + error.message
                             );
                         }
                     }
@@ -144,7 +144,7 @@ module.exports = function(RED) {
                                 await api.getConsumptionToday(id);
                         } catch (error) {
                             node.warn(
-                                "Energy information: " + error.message
+                                "Energy data: " + error.message
                             );
                         }
                     }
@@ -193,7 +193,7 @@ module.exports = function(RED) {
 
         function findZone(id, type) {
             if (!dashboard) {
-                throw new Error("Dashboard not available");
+                throw new Error("Dashboard not yet available");
             }
 
             for (const appliance of dashboard.appliances || []) {
@@ -266,20 +266,18 @@ module.exports = function(RED) {
 
         createClient();
 
-        status("yellow", "ring", "Connect...");
+        status("yellow", "ring", "Connecting...");
 
         update();
 
-		if (pollInterval> 0){
-			timer = setInterval(update, pollInterval);
-		}
+        timer = setInterval(update, pollInterval);
 
         node.on("input", async function(msg, send, done) {
             send = send || node.send;
 
             try {
                 if (!msg.payload || typeof msg.payload !== "object") {
-                    throw new Error("msg.payload must be an object");
+                    throw new Error("msg.payload must be object (json)");
                 }
 
                 const result = await command(msg.payload);
@@ -343,7 +341,7 @@ module.exports = function(RED) {
                 timer = null;
             }
 
-            status("grey", "ring", "Stop");
+            status("grey", "ring", "Stopped");
         });
     }
 
