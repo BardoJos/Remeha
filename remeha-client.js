@@ -5,20 +5,33 @@ const { wrapper } = require("axios-cookiejar-support");
 const crypto = require("crypto");
 const fs = require("fs");
 
+const BASE_LOGIN =
+    "https://remehalogin.bdrthermea.net/bdrb2cprod.onmicrosoft.com";
+
+const BASE_API =
+    "https://api.bdrthermea.net/Mobile/api";
+
+const CLIENT_ID =
+    "6ce007c6-0628-419e-88f4-bee2e6418eec";
+
+const POLICY = "B2C_1A_RPSignUpSignInNewRoomV3.1";
+
+const REDIRECT_URI = "com.b2c.remehaapp://login-callback";
+
+const SCOPE =
+    "openid https://bdrb2cprod.onmicrosoft.com/iotdevice/user_impersonation offline_access";
+
+const SUBSCRIPTION_KEY =
+    "df605c5470d846fc91e848b1cc653ddf";
+
 class RemehaClient {
     constructor(options = {}) {
-        this.email           = options.email;
-        this.password        = options.password;
-        this.tokenFile       = options.tokenFile || "/data/remeha-token.json";		
-        this.baseLogin       = options.baseLogin;		
-        this.baseTenant      = options.baseTenant;		
-        this.baseApi         = options.baseApi;		
-        this.clientId        = options.clientId;		
-        this.policy          = options.policy;	
-        this.redirectUri     = options.redirectUri;	
-        this.scope           = options.scope;	
-        this.subscriptionKey = options.subscriptionKey;
-		
+        this.email = options.email;
+        this.password = options.password;
+        this.tokenFile = options.tokenFile || "/data/remeha-token.json";
+        this.clientId = options.clientId || CLIENT_ID;
+        this.subscriptionKey = options.subscriptionKey || SUBSCRIPTION_KEY;
+
         this.jar = new CookieJar();
 
         this.http = wrapper(axios.create({
@@ -61,7 +74,7 @@ class RemehaClient {
 
     async login() {
         if (!this.email || !this.password) {
-            throw new Error("Remeha credentials missing");
+            throw new Error("Remeha credentials ontbreken");
         }
 
         const state = this.base64url(crypto.randomBytes(32));
@@ -75,17 +88,17 @@ class RemehaClient {
 
         // 1. Start OAuth login
         const authorize = await this.http.get(
-            this.baseLogin + "/" + this.baseTenant + "/oauth2/v2.0/authorize",
+            BASE_LOGIN + "/oauth2/v2.0/authorize",
             {
                 params: {
                     response_type: "code",
                     client_id: this.clientId,
-                    redirect_uri: this.redirectUri,
-                    scope: "openid " + this.scope,
+                    redirect_uri: REDIRECT_URI,
+                    scope: SCOPE,
                     state,
                     code_challenge: challenge,
                     code_challenge_method: "S256",
-                    p: this.policy,
+                    p: POLICY,
                     brand: "remeha",
                     lang: "en",
                     nonce: "defaultNonce",
@@ -98,7 +111,7 @@ class RemehaClient {
         const requestId = authorize.headers["x-request-id"];
 
         if (!requestId) {
-            throw new Error("OAuth request-id missing");
+            throw new Error("OAuth request-id ontbreekt");
         }
 
         const stateProperties = this.base64url(
@@ -106,21 +119,23 @@ class RemehaClient {
         );
 
         // 2. Retrieve CSRF cookie
-        const cookies = await this.jar.getCookies(this.baseLogin);
+        const cookies = await this.jar.getCookies(
+            "https://remehalogin.bdrthermea.net"
+        );
 
         const csrfCookie = cookies.find(
             c => c.key === "x-ms-cpim-csrf"
         );
 
         if (!csrfCookie) {
-            throw new Error("Remeha CSRF-cookie missing");
+            throw new Error("Remeha CSRF-cookie ontbreekt");
         }
 
         const csrf = csrfCookie.value;
 
         // 3. Submit credentials
         const authResponse = await this.http.post(
-            `${this.baseLogin}/${this.baseTenant}/${this.policy}/SelfAsserted`,
+            `${BASE_LOGIN}/${POLICY}/SelfAsserted`,
             new URLSearchParams({
                 request_type: "RESPONSE",
                 signInName: this.email,
@@ -129,7 +144,7 @@ class RemehaClient {
             {
                 params: {
                     tx: "StateProperties=" + stateProperties,
-                    p: this.policy
+                    p: POLICY
                 },
                 headers: {
                     "x-csrf-token": csrf,
@@ -139,18 +154,18 @@ class RemehaClient {
         );
 
         if (String(authResponse.data.status) !== "200") {
-            throw new Error("Remeha login failed");
+            throw new Error("Remeha login mislukt");
         }
 
         // 4. Complete authentication
         const callback = await this.http.get(
-            `${this.baseLogin}/${this.baseTenant}/${this.policy}/api/CombinedSigninAndSignup/confirmed`,
+            `${BASE_LOGIN}/${POLICY}/api/CombinedSigninAndSignup/confirmed`,
             {
                 params: {
                     rememberMe: "false",
                     csrf_token: csrf,
                     tx: "StateProperties=" + stateProperties,
-                    p: this.policy
+                    p: POLICY
                 },
                 maxRedirects: 0,
                 validateStatus: status => status >= 200 && status < 400
@@ -160,23 +175,26 @@ class RemehaClient {
         const location = callback.headers.location;
 
         if (!location) {
-            throw new Error("OAuth callback missing");
+            throw new Error("OAuth callback ontbreekt");
         }
 
-        const callbackUrl = new URL(location, this.baseLogin);
+        const callbackUrl = new URL(
+            location,
+            "https://remehalogin.bdrthermea.net"
+        );
 
         const code = callbackUrl.searchParams.get("code");
         const returnedState = callbackUrl.searchParams.get("state");
 
         if (!code || returnedState !== state) {
-            throw new Error("Invalid OAuth callback of state");
+            throw new Error("Ongeldige OAuth callback of state");
         }
 
         // 5. Exchange authorization code
         return await this.requestToken({
             grant_type: "authorization_code",
             code,
-            redirect_uri: this.redirectUri,
+            redirect_uri: REDIRECT_URI,
             code_verifier: verifier,
             client_id: this.clientId
         });
@@ -184,10 +202,10 @@ class RemehaClient {
 
     async requestToken(params) {
         const response = await this.http.post(
-            `${this.baseLogin}/${this.baseTenant}/oauth2/v2.0/token`,
+            `${BASE_LOGIN}/oauth2/v2.0/token`,
             new URLSearchParams(params).toString(),
             {
-                params: { p: this.policy },
+                params: { p: POLICY },
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded"
                 },
@@ -198,7 +216,7 @@ class RemehaClient {
         const token = response.data;
 
         if (!token.access_token) {
-            throw new Error("No access token received");
+            throw new Error("Geen access token ontvangen");
         }
 
         token.expires_at = Date.now() +
@@ -223,7 +241,7 @@ class RemehaClient {
         } catch (error) {
             if (error.response?.status === 400) {
                 throw new Error(
-                    "Remeha refresh token rejected. Re-login required."
+                    "Remeha refresh-token afgewezen. Opnieuw inloggen vereist."
                 );
             }
             throw error;
@@ -253,7 +271,7 @@ class RemehaClient {
         try {
             const response = await this.http.request({
                 method,
-                url: this.baseApi + path,
+                url: BASE_API + path,
                 data,
                 headers: {
                     Authorization: "Bearer " + accessToken,
@@ -271,7 +289,7 @@ class RemehaClient {
 
                 const retry = await this.http.request({
                     method,
-                    url: this.baseApi + path,
+                    url: BASE_API + path,
                     data,
                     headers: {
                         Authorization: "Bearer " + retryToken,
