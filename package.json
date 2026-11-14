@@ -1,31 +1,5 @@
-
 {
-  "name": "node-red-contrib-remeha-home",
-  "version": "1.0.0",
-  "description": "Standalone Remeha Home integration for Node-RED",
-  "main": "nodes/remeha.js",
-  "license": "MIT",
-  "keywords": [
-    "node-red",
-    "remeha",
-    "bdr-thermea",
-    "heating",
-    "thermostat"
-  ],
-  "engines": {
-    "node": ">=20"
-  },
-  "node-red": {
-    "nodes": {
-      "remeha": "nodes/remeha.js"
-    }
-  },
   "dependencies": {
-    "axios": "^1.13.2",
-    "tough-cookie": "^4.1.4",
-    "axios-cookiejar-support": "^5.0.3"
-  },
-  "scripts": {
-    "build": "browserify --node --ignore-missing index.js | terser > bundle.js"
-	}
+    "node-red-contrib-remeha-home": "file:node-red-contrib-remeha-home"
+  }
 }
