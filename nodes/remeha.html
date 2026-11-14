@@ -7,6 +7,9 @@ RED.nodes.registerType('remeha-home', {
         name: {
             value: "Remeha Home"
         },
+		pollingEnabled: {
+			value: true
+		},
         pollInterval: {
             value: 60,
             required: true,
@@ -40,13 +43,26 @@ RED.nodes.registerType('remeha-home', {
     label: function() {
         return this.name || "Remeha Home";
     },
-    paletteLabel: "Remeha Home",
-    oneditprepare: function() {
-        $("#node-input-pollInterval").typedInput({
-            type: "num",
-            types: ["num"]
-        });
+    paletteLabel: "Remeha Home",	
+	oneditprepare: function() {
+		$("#node-input-pollInterval").typedInput({
+			type: "num",
+			types: ["num"]
+		});
+
+		function updatePolling() {
+			const enabled = $("#node-input-pollingEnabled").prop("checked");
+
+			$("#node-input-pollInterval").prop("disabled", !enabled);
+			$("#node-input-pollInterval").typedInput(
+				enabled ? "enable" : "disable"
+			);
     }
+
+    $("#node-input-pollingEnabled").on("change", updatePolling);
+
+    updatePolling();
+}
 });
 </script>
 
@@ -78,6 +94,16 @@ RED.nodes.registerType('remeha-home', {
     <hr>
     <h3>Polling</h3>
 	
+	<div class="form-row">
+		<label for="node-input-pollingEnabled">
+			<i class="fa fa-refresh"></i> Polling
+		</label>
+		<input type="checkbox"
+			   id="node-input-pollingEnabled"
+			   style="display: inline-block; width: auto; vertical-align: top;">
+		<span>Activate Polling</span>
+	</div>
+	
     <div class="form-row">
         <label for="node-input-pollInterval">
             <i class="fa fa-clock-o"></i> Poll interval
@@ -88,7 +114,7 @@ RED.nodes.registerType('remeha-home', {
     <p class="form-tips">
         The dashboard is retrieved automatically.
         The minimum polling interval is 30 seconds.
-		Zero: polling is disabled
+		Uncheck polling to disable automatic updates.
     </p>
 	
 	<hr>

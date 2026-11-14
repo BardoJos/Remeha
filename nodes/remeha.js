@@ -11,7 +11,7 @@ module.exports = function(RED) {
 
         const node = this;
         const credentials = RED.nodes.getCredentials(config.id) || {};
-
+		const pollingEnabled = config.pollingEnabled !== false;
         const pollInterval = Math.max(
             30000,
             Number(config.pollInterval || 60) * 1000
@@ -117,7 +117,7 @@ module.exports = function(RED) {
                 const data = await api.getDashboard();
 
                 if (!data || !Array.isArray(data.appliances)) {
-                    throw new Error("Ongeldig dashboard ontvangen");
+                    throw new Error("Invalid dashboard received");
                 }
 
                 dashboard = data;
@@ -133,24 +133,22 @@ module.exports = function(RED) {
                                 await api.getTechnicalInformation(id);
                         } catch (error) {
                             node.warn(
-                                "Technische informatie: " + error.message
+                                "Technical information: " + error.message
                             );
                         }
                     }
 
-                    if (now - lastEnergy >= 900000) {
-                        try {
-                            energy[id] =
-                                await api.getConsumptionToday(id);
-                        } catch (error) {
-                            node.warn(
-                                "Energy data: " + error.message
-                            );
-                        }
-                    }
+                    // get energy data only when polling is activated
+					if (pollingEnabled && now - lastEnergy >= 900000) {
+						try {
+							energy[id] = await api.getConsumptionToday(id);
+						} catch (error) {
+							node.warn("Energy data: " + error.message);
+						}
+					}
                 }
 
-                if (now - lastEnergy >= 900000) {
+                if (pollingEnabled && now - lastEnergy >= 900000) {
                     lastEnergy = now;
                 }
 
@@ -265,12 +263,14 @@ module.exports = function(RED) {
         }
 
         createClient();
-
-        status("yellow", "ring", "Connecting...");
-
-        update();
-
-        timer = setInterval(update, pollInterval);
+		
+		if (pollingEnabled !== false) {
+			status("yellow", "ring", "Connecting...");
+			update();
+			timer = setInterval(update, pollInterval);
+		} else {
+			status("blue", "ring", "Manual...");
+		}
 
         node.on("input", async function(msg, send, done) {
             send = send || node.send;
