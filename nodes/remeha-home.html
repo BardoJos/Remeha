@@ -1,0 +1,626 @@
+
+<script type="text/javascript">
+
+RED.nodes.registerType('remeha-account', {
+    category: 'config',
+
+    defaults: {
+        name: {
+            value: "Remeha Account"
+        }
+    },
+
+    credentials: {
+        email: {
+            type: "text",
+            required: true
+        },
+        password: {
+            type: "password",
+            required: true
+        },
+        token: {
+            type: "password"
+        }
+    },
+
+    label: function() {
+        return this.name || "Remeha Account";
+    }
+});
+
+RED.nodes.registerType('remeha-home', {
+
+    category: 'Remeha Home',
+
+    color: '#e9a23b',
+
+    defaults: {
+	
+		account: {
+			type: "remeha-account",
+			required: true
+		},
+		
+        name: {
+            value: "Remeha Home"
+        },
+
+        pollingEnabled: {
+            value: true
+        },
+
+        pollInterval: {
+            value: 60,
+            required: true,
+            validate: function(v) {
+                return RED.validators.number()(v) &&
+                    Number(v) >= 30;
+            }
+        },
+
+        energyPollingEnabled: {
+            value: true
+        },
+
+        energyInterval: {
+            value: 15,
+            required: true,
+            validate: function(v) {
+                return RED.validators.number()(v) &&
+                    Number(v) >= 1;
+            }
+        },
+
+        clientId: {
+            value: "6ce007c6-0628-419e-88f4-bee2e6418eec",
+            required: true
+        },
+
+        subscriptionKey: {
+            value: "df605c5470d846fc91e848b1cc653ddf",
+            required: true
+        }
+    },
+
+    inputs: 1,
+
+    outputs: 3,
+
+    icon: "font-awesome/fa-thermometer-half",
+
+    label: function() {
+        return this.name || "Remeha Home";
+    },
+
+    paletteLabel: "Remeha Home",
+
+    oneditprepare: function() {
+
+        $("#node-input-pollInterval").typedInput({
+            type: "num",
+            types: ["num"]
+        });
+
+        $("#node-input-energyInterval").typedInput({
+            type: "num",
+            types: ["num"]
+        });
+
+        function updatePolling() {
+
+            const enabled =
+                $("#node-input-pollingEnabled").prop("checked");
+
+            $("#node-input-pollInterval")
+                .prop("disabled", !enabled);
+
+            $("#node-input-pollInterval").typedInput(
+                enabled ? "enable" : "disable"
+            );
+        }
+
+        function updateEnergyPolling() {
+
+            const enabled =
+                $("#node-input-energyPollingEnabled").prop("checked");
+
+            $("#node-input-energyInterval")
+                .prop("disabled", !enabled);
+
+            $("#node-input-energyInterval").typedInput(
+                enabled ? "enable" : "disable"
+            );
+        }
+
+        $("#node-input-pollingEnabled")
+            .on("change", updatePolling);
+
+        $("#node-input-energyPollingEnabled")
+            .on("change", updateEnergyPolling);
+
+        updatePolling();
+        updateEnergyPolling();
+    },
+
+    oneditsave: function() {
+
+        const pollInterval =
+            Number($("#node-input-pollInterval").val());
+
+        const energyInterval =
+            Number($("#node-input-energyInterval").val());
+
+        if (pollInterval < 30) {
+            RED.notify(
+                "Minimum polling interval is 30 seconds",
+                "error"
+            );
+        }
+
+        if (energyInterval < 1) {
+            RED.notify(
+                "Minimum energy interval is 1 minute",
+                "error"
+            );
+        }
+    }
+
+});
+
+</script>
+
+<script type="text/html" data-template-name="remeha-account">
+
+    <div class="form-row">
+        <label for="node-config-input-name">
+            <i class="fa fa-tag"></i> Name
+        </label>
+        <input type="text" id="node-config-input-name">
+    </div>
+
+    <hr>
+
+    <h3>
+        <i class="fa fa-user"></i>
+        Remeha account
+    </h3>
+
+    <div class="form-row">
+        <label for="node-config-input-email">
+            E-mail
+        </label>
+        <input
+            type="text"
+            id="node-config-input-email"
+            autocomplete="username">
+    </div>
+
+    <div class="form-row">
+        <label for="node-config-input-password">
+            Password
+        </label>
+        <input
+            type="password"
+            id="node-config-input-password"
+            autocomplete="new-password">
+    </div>
+
+    <p class="form-tips">
+        Enter your Remeha Home account credentials.
+        These credentials are stored securely by Node-RED.
+    </p>
+
+</script>
+
+<!-- ==========================================
+     CONFIGURATION
+=========================================== -->
+
+<script type="text/html" data-template-name="remeha-home">
+
+    <div class="form-row">
+        <label for="node-input-name">
+            <i class="fa fa-tag"></i> Name
+        </label>
+
+        <input type="text" id="node-input-name">
+    </div>
+
+    <hr>
+
+    <h3>
+        <i class="fa fa-user"></i>
+        Remeha account
+    </h3>
+	
+	<div class="form-row">
+		<label for="node-input-account">
+			<i class="fa fa-user"></i> Account
+		</label>
+		<input type="text" id="node-input-account">
+	</div>
+
+    <p class="form-tips">
+        Enter your Remeha Home account credentials.
+        Authentication tokens are stored by Node-RED.
+    </p>
+
+    <hr>
+
+    <!-- POLLING -->
+
+    <h3>
+        <i class="fa fa-refresh"></i>
+        Dashboard polling
+    </h3>
+
+    <div class="form-row">
+
+        <label for="node-input-pollingEnabled">
+            Polling
+        </label>
+
+        <input
+            type="checkbox"
+            id="node-input-pollingEnabled"
+            style="display:inline-block;width:auto;vertical-align:top;">
+
+        <span>Activate automatic polling</span>
+
+    </div>
+
+    <div class="form-row">
+
+        <label for="node-input-pollInterval">
+            <i class="fa fa-clock-o"></i>
+            Interval
+        </label>
+
+        <input
+            type="text"
+            id="node-input-pollInterval">
+
+        <span>seconds</span>
+
+    </div>
+
+    <p class="form-tips">
+        Retrieves dashboard and sensor data automatically.
+        Minimum interval: 30 seconds.
+    </p>
+
+    <hr>
+
+    <!-- ENERGY -->
+
+    <h3>
+        <i class="fa fa-bolt"></i>
+        Energy monitoring
+    </h3>
+
+    <div class="form-row">
+
+        <label for="node-input-energyPollingEnabled">
+            Energy polling
+        </label>
+
+        <input
+            type="checkbox"
+            id="node-input-energyPollingEnabled"
+            style="display:inline-block;width:auto;vertical-align:top;">
+
+        <span>Activate automatic energy polling</span>
+
+    </div>
+
+    <div class="form-row">
+
+        <label for="node-input-energyInterval">
+            <i class="fa fa-clock-o"></i>
+            Interval
+        </label>
+
+        <input
+            type="text"
+            id="node-input-energyInterval">
+
+        <span>minutes</span>
+
+    </div>
+
+    <p class="form-tips">
+        Retrieves energy consumption independently
+        from dashboard polling.
+    </p>
+
+    <hr>
+
+    <!-- API -->
+
+    <h3>
+        <i class="fa fa-key"></i>
+        API configuration
+    </h3>
+
+    <div class="form-row">
+
+        <label for="node-input-clientId">
+            Client ID
+        </label>
+
+        <input
+            type="text"
+            id="node-input-clientId">
+
+    </div>
+
+    <div class="form-row">
+
+        <label for="node-input-subscriptionKey">
+            Subscription Key
+        </label>
+
+        <input
+            type="text"
+            id="node-input-subscriptionKey">
+
+    </div>
+
+    <p class="form-tips">
+        Default Remeha API configuration.
+        Change only when using another API application.
+    </p>
+
+    <hr>
+
+    <h3>
+        <i class="fa fa-info-circle"></i>
+        Outputs
+    </h3>
+
+    <ol>
+        <li>Dashboard data</li>
+        <li>Processed sensor data</li>
+        <li>Commands and errors</li>
+    </ol>
+
+</script>
+
+
+<!-- ==========================================
+     HELP
+=========================================== -->
+
+<script type="text/html" data-help-name="remeha-home">
+
+    <p>
+        Connects Node-RED to the Remeha Home API.
+        Supports dashboard monitoring, climate control,
+        domestic hot water and energy consumption.
+    </p>
+
+    <h3>Outputs</h3>
+
+    <ol>
+        <li>
+            <b>Dashboard</b><br>
+            Original Remeha dashboard JSON.
+        </li>
+
+        <li>
+            <b>Sensors</b><br>
+            Processed appliance, climate and hot water data.
+        </li>
+
+        <li>
+            <b>Commands / Errors</b><br>
+            Command results and error messages.
+        </li>
+    </ol>
+
+    <hr>
+
+    <h3>Input commands</h3>
+
+    <p>
+        Send a JSON object through msg.payload.
+    </p>
+
+    <h4>Dashboard</h4>
+
+    <pre>
+{
+    "action": "dashboard"
+}
+    </pre>
+
+    <h4>Climate control</h4>
+
+    <p>Manual temperature:</p>
+
+    <pre>
+{
+    "action": "manual",
+    "zoneId": "123",
+    "setpoint": 21
+}
+    </pre>
+
+    <p>Schedule mode:</p>
+
+    <pre>
+{
+    "action": "schedule",
+    "zoneId": "123",
+    "programId": 1
+}
+    </pre>
+
+    <p>Temporary override:</p>
+
+    <pre>
+{
+    "action": "temporary_override",
+    "zoneId": "123",
+    "setpoint": 22
+}
+    </pre>
+
+    <p>Off / anti-frost:</p>
+
+    <pre>
+{
+    "action": "off",
+    "zoneId": "123"
+}
+    </pre>
+
+    <p>Fireplace mode:</p>
+
+    <pre>
+{
+    "action": "fireplace",
+    "zoneId": "123",
+    "enabled": true
+}
+    </pre>
+
+    <h4>Heating programs</h4>
+
+    <pre>
+{
+    "action": "activate_program",
+    "zoneId": "123",
+    "programId": 1
+}
+    </pre>
+
+    <p>Retrieve schedule:</p>
+
+    <pre>
+{
+    "action": "get_schedule",
+    "zoneId": "123",
+    "programId": 1
+}
+    </pre>
+
+    <h4>Hot water</h4>
+
+    <p>Eco mode:</p>
+
+    <pre>
+{
+    "action": "hotwater_eco",
+    "zoneId": "456"
+}
+    </pre>
+
+    <p>Comfort mode:</p>
+
+    <pre>
+{
+    "action": "hotwater_comfort",
+    "zoneId": "456"
+}
+    </pre>
+
+    <p>Hot water schedule:</p>
+
+    <pre>
+{
+    "action": "hotwater_schedule",
+    "zoneId": "456"
+}
+    </pre>
+
+    <p>Eco temperature:</p>
+
+    <pre>
+{
+    "action": "hotwater_eco_temperature",
+    "zoneId": "456",
+    "temperature": 40
+}
+    </pre>
+
+    <p>Comfort temperature:</p>
+
+    <pre>
+{
+    "action": "hotwater_comfort_temperature",
+    "zoneId": "456",
+    "temperature": 60
+}
+    </pre>
+
+    <h4>Technical information</h4>
+
+    <pre>
+{
+    "action": "technical",
+    "applianceId": "123"
+}
+    </pre>
+
+    <h4>Energy consumption</h4>
+
+    <p>Today:</p>
+
+    <pre>
+{
+    "action": "consumption_today",
+    "applianceId": "123"
+}
+    </pre>
+
+    <p>Daily:</p>
+
+    <pre>
+{
+    "action": "consumption_daily",
+    "applianceId": "123",
+    "startDate": "2026-11-01",
+    "endDate": "2026-11-15"
+}
+    </pre>
+
+    <p>Monthly:</p>
+
+    <pre>
+{
+    "action": "consumption_monthly",
+    "applianceId": "123",
+    "startDate": "2026-01-01",
+    "endDate": "2026-11-15"
+}
+    </pre>
+
+    <p>Yearly:</p>
+
+    <pre>
+{
+    "action": "consumption_yearly",
+    "applianceId": "123",
+    "startDate": "2024-01-01",
+    "endDate": "2026-11-15"
+}
+    </pre>
+
+    <hr>
+
+    <h3>Important</h3>
+
+    <p>
+        Zone IDs and appliance IDs must be obtained
+        from the dashboard output.
+    </p>
+
+    <p>
+        Not every Remeha appliance supports every
+        function. API endpoint availability depends
+        on the appliance and firmware.
+    </p>
+
+</script>

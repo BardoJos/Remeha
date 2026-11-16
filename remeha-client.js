@@ -74,7 +74,7 @@ class RemehaClient {
 
     async login() {
         if (!this.email || !this.password) {
-            throw new Error("Remeha credentials ontbreken");
+            throw new Error("Remeha credentials missing");
         }
 
         const state = this.base64url(crypto.randomBytes(32));
@@ -111,7 +111,7 @@ class RemehaClient {
         const requestId = authorize.headers["x-request-id"];
 
         if (!requestId) {
-            throw new Error("OAuth request-id ontbreekt");
+            throw new Error("OAuth request-id missing");
         }
 
         const stateProperties = this.base64url(
@@ -128,7 +128,7 @@ class RemehaClient {
         );
 
         if (!csrfCookie) {
-            throw new Error("Remeha CSRF-cookie ontbreekt");
+            throw new Error("Remeha CSRF-cookie missing");
         }
 
         const csrf = csrfCookie.value;
@@ -154,7 +154,7 @@ class RemehaClient {
         );
 
         if (String(authResponse.data.status) !== "200") {
-            throw new Error("Remeha login mislukt");
+            throw new Error("Remeha login failed");
         }
 
         // 4. Complete authentication
@@ -175,7 +175,7 @@ class RemehaClient {
         const location = callback.headers.location;
 
         if (!location) {
-            throw new Error("OAuth callback ontbreekt");
+            throw new Error("OAuth callback missing");
         }
 
         const callbackUrl = new URL(
@@ -187,7 +187,7 @@ class RemehaClient {
         const returnedState = callbackUrl.searchParams.get("state");
 
         if (!code || returnedState !== state) {
-            throw new Error("Ongeldige OAuth callback of state");
+            throw new Error("Invalid OAuth callback of state");
         }
 
         // 5. Exchange authorization code
@@ -216,7 +216,7 @@ class RemehaClient {
         const token = response.data;
 
         if (!token.access_token) {
-            throw new Error("Geen access token ontvangen");
+            throw new Error("Access token not received");
         }
 
         token.expires_at = Date.now() +
@@ -241,7 +241,7 @@ class RemehaClient {
         } catch (error) {
             if (error.response?.status === 400) {
                 throw new Error(
-                    "Remeha refresh-token afgewezen. Opnieuw inloggen vereist."
+                    "Remeha refresh token rejected. Re-login required."
                 );
             }
             throw error;
@@ -313,6 +313,53 @@ class RemehaClient {
         );
     }
 
+    // Eco mode / anti-frost
+    async setHotWaterEco(hotWaterZoneId) {
+        return this.api(
+            "POST",
+            `/hot-water-zones/${encodeURIComponent(hotWaterZoneId)}/modes/anti-frost`
+        );
+    }
+	
+	// Set Eco temperature
+    async setHotWaterEcoTemperature(hotWaterZoneId, temperature) {
+        return this.api(
+            "POST",
+            `/hot-water-zones/${encodeURIComponent(hotWaterZoneId)}/reduced-setpoint`,
+            {
+                reducedSetpoint: Number(temperature)
+            }
+        );
+    }
+	
+	// Set Comfort temperature
+    async setHotWaterComfortTemperature(hotWaterZoneId, temperature) {
+        return this.api(
+            "POST",
+            `/hot-water-zones/${encodeURIComponent(hotWaterZoneId)}/comfort-setpoint`,
+            {
+                comfortSetpoint: Number(temperature)
+            }
+        );
+    }
+	
+	// Comfort mode
+    async setHotWaterComfort(hotWaterZoneId) {
+        return this.api(
+            "POST",
+            `/hot-water-zones/${encodeURIComponent(hotWaterZoneId)}/modes/continuous-comfort`
+        );
+    }
+	
+	// Schedule mode
+    async setHotWaterSchedule(hotWaterZoneId) {
+        return this.api(
+            "POST",
+            `/hot-water-zones/${encodeURIComponent(hotWaterZoneId)}/modes/schedule`
+        );
+    }
+	
+	
     // Manual temperature
     async setManual(zoneId, setpoint) {
         return this.api(
@@ -372,28 +419,94 @@ class RemehaClient {
             `/appliances/${encodeURIComponent(applianceId)}/technicaldetails`
         );
     }
+	
+    // ==============================
+    // ENERGY CONSUMPTION
+    // ==============================
 
-    // Today's consumption
-    async getConsumptionToday(applianceId) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+    async getConsumption(applianceId, period, startDate, endDate) {
 
-        const end = new Date(today);
-        end.setHours(23, 59, 59, 0);
+        const allowedPeriods = [
+            "daily",
+            "monthly",
+            "yearly"
+        ];
 
-        const format = date => {
-            return date.toISOString().replace("T", " ")
-                .replace("Z", ".000Z");
+        if (!allowedPeriods.includes(period)) {
+            throw new Error(
+                "not a valid period. Use daily, monthly or yearly."
+            );
+        }
+
+        if (!startDate || !endDate) {
+            throw new Error(
+                "startDate and endDate are mandatory"
+            );
+        }
+
+        const formatDate = date => {
+            return new Date(date)
+                .toISOString()
+                .replace("T", " ");
         };
 
         const params = new URLSearchParams({
-            startDate: format(today),
-            endDate: format(end)
+            startDate: formatDate(startDate),
+            endDate: formatDate(endDate)
         });
 
         return this.api(
             "GET",
-            `/appliances/${encodeURIComponent(applianceId)}/energyconsumption/daily?${params}`
+            `/appliances/${encodeURIComponent(applianceId)}/energyconsumption/${period}?${params}`
+        );
+    }
+
+    // Daily consumption
+    async getConsumptionDaily(applianceId, startDate, endDate) {
+        return this.getConsumption(
+            applianceId,
+            "daily",
+            startDate,
+            endDate
+        );
+    }
+
+    // Monthly consumption
+    async getConsumptionMonthly(applianceId, startDate, endDate) {
+        return this.getConsumption(
+            applianceId,
+            "monthly",
+            startDate,
+            endDate
+        );
+    }
+
+    // Yearly consumption
+    async getConsumptionYearly(applianceId, startDate, endDate) {
+        return this.getConsumption(
+            applianceId,
+            "yearly",
+            startDate,
+            endDate
+        );
+    }
+	
+    // Today's consumption
+    async getConsumptionToday(applianceId) {
+
+        const today = new Date();
+
+        const start = new Date(today);
+        start.setHours(0, 0, 0, 0);
+
+        const end = new Date(today);
+        end.setHours(23, 59, 59, 999);
+
+        return this.getConsumption(
+            applianceId,
+            "daily",
+            start,
+            end
         );
     }
 }

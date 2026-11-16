@@ -1,5 +1,41 @@
+
 {
+  "name": "node-red-contrib-remeha-home",
+  "version": "2.1.0",
+  "description": "Standalone Remeha Home integration for Node-RED with climate, hot water and energy monitoring",
+  "main": "nodes/remeha-home.js",
+  "license": "MIT",
+  "author": "Node-RED Community",
+  "keywords": [
+    "node-red",
+    "node-red-contrib",
+    "remeha",
+    "bdr-thermea",
+    "heating",
+    "thermostat",
+    "climate-control",
+    "hot-water",
+    "energy-monitoring",
+    "iot"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "node-red": {
+    "nodes": {
+      "remeha-home": "nodes/remeha-home.js"
+    }
+  },
   "dependencies": {
-    "node-red-contrib-remeha-home": "file:node-red-contrib-remeha-home"
-  }
+    "axios": "^1.13.2",
+    "tough-cookie": "^4.1.4",
+    "axios-cookiejar-support": "^5.0.3"
+  },
+  "devDependencies": {
+    "browserify": "^17.0.1",
+    "terser": "^5.44.0"
+  },
+  "scripts": {
+    "build": "browserify --node --ignore-missing index.js | terser > bundle.js"
+   }
 }
